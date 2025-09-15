@@ -258,10 +258,10 @@ export default function App() {
         ...(selPatient.email ? [{ system: "email", value: selPatient.email }] : []),
       ],
       address: selPatient.address ? [{ text: selPatient.address }] : undefined,
-      text: {
-        status: "generated",
-        div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>Patient: ${selPatient.name}</p></div>`,
-      },
+      // text: {
+      //   status: "generated",
+      //   div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>Patient: ${selPatient.name}</p></div>`,
+      // },
     };
 
     const practitionerResource = {
@@ -302,10 +302,10 @@ export default function App() {
             },
           ]
         : undefined,
-      text: {
-        status: "generated",
-        div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>${practitioner.name}</p></div>`,
-      },
+      // text: {
+      //   status: "generated",
+      //   div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>${practitioner.name}</p></div>`,
+      // },
     };
 
     const organizationResource = {
@@ -340,10 +340,10 @@ export default function App() {
       name: organization.name,
       telecom: organization.phone ? [{ system: "phone", value: organization.phone }] : undefined,
       address: organization.address ? [{ text: organization.address }] : undefined,
-      text: {
-        status: "generated",
-        div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>${organization.name}</p></div>`,
-      },
+      // text: {
+      //   status: "generated",
+      //   div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>${organization.name}</p></div>`,
+      // },
     };
 
     const processedLineItems = lineItems.map((li, idx) => {
@@ -438,10 +438,10 @@ export default function App() {
       totalNet: { value: Number(finalNet.toFixed(2)), currency: "INR" },
       totalGross: { value: Number(finalGross.toFixed(2)), currency: "INR" },
       lineItem: processedLineItems,
-      text: {
-        status: "generated",
-        div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>Invoice ${invoiceNumber}</p></div>`,
-      },
+      // text: {
+      //   status: "generated",
+      //   div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>Invoice ${invoiceNumber}</p></div>`,
+      // },
     };
 
     const compositionResource = {
@@ -469,17 +469,17 @@ export default function App() {
             ],
             text: "Invoice",
           },
-          text: {
-            status: "generated",
-            div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>Invoice details</p></div>`,
-          },
+          // text: {
+          //   status: "generated",
+          //   div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>Invoice details</p></div>`,
+          // },
           entry: [{ reference: `urn:uuid:${invoiceId}`, type: "Invoice" }],
         },
       ],
-      text: {
-        status: "generated",
-        div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>Invoice for ${selPatient.name}</p></div>`,
-      },
+      // text: {
+      //   status: "generated",
+      //   div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>Invoice for ${selPatient.name}</p></div>`,
+      // },
     };
 
     const binaryResources = attachments.map((att) => ({
@@ -503,10 +503,10 @@ export default function App() {
           },
         },
       ],
-      text: {
-        status: "generated",
-        div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>${att.name}</p></div>`,
-      },
+      // text: {
+      //   status: "generated",
+      //   div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>${att.name}</p></div>`,
+      // },
     }));
 
     const entries = [
