@@ -746,7 +746,7 @@ export default function App() {
           ))}
           <button className="btn btn-sm btn-outline-secondary" onClick={addLine}>+ Add line</button>
           <div className="mt-2 fw-semibold">Grand total: ₹{invoiceTotal.toFixed(2)}</div>
-          <div className="form-text mt-1">Add at least one line with amount > 0 or attach a document to satisfy section entry requirement.</div>
+          <div className="form-text mt-1">Add at least one line with amount 0 or attach a document to satisfy section entry requirement.</div>
         </div>
       </div>
 
