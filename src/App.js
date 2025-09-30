@@ -315,7 +315,7 @@ export default function App() {
         id: idForBundle,
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Patient"] },
-        text: buildNarrative("Patient", `<p>${p.name || ""}</p><p>${p.gender || ""} ${p.dob || ""}</p>`),
+        // text: buildNarrative("Patient", `<p>${p.name || ""}</p><p>${p.gender || ""} ${p.dob || ""}</p>`),
         identifier: identifiers.length ? identifiers : undefined,
         name: p.name ? [{ text: p.name }] : undefined,
         gender: p.gender ? String(p.gender).toLowerCase() : undefined,
@@ -332,7 +332,7 @@ export default function App() {
         id: practRefId,
         language: "en-IN",
         meta: { profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/Practitioner"] },
-        text: buildNarrative("Practitioner", `<p>${practName}</p>`),
+        // text: buildNarrative("Practitioner", `<p>${practName}</p>`),
         identifier: [{
           type: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "MD", display: "Medical License number" }] },
           system: "https://doctor.ndhm.gov.in",
@@ -351,7 +351,7 @@ export default function App() {
         id: encounterId,
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Encounter"] },
-        text: buildNarrative("Encounter", `<p>${encounterText}</p>`),
+        // text: buildNarrative("Encounter", `<p>${encounterText}</p>`),
         status: "finished",
         class: { system: "http://terminology.hl7.org/CodeSystem/v3-ActCode", code: "AMB", display: "ambulatory" },
         subject: { reference: `urn:uuid:${patientId}` },
@@ -367,7 +367,7 @@ export default function App() {
         id: custodianId,
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Organization"] },
-        text: buildNarrative("Organization", `<p>${custodianName}</p>`),
+        // text: buildNarrative("Organization", `<p>${custodianName}</p>`),
         name: custodianName,
       };
     }
@@ -380,7 +380,7 @@ export default function App() {
         id: attesterOrgId,
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Organization"] },
-        text: buildNarrative("Organization", `<p>${attesterOrgName}</p>`),
+        // text: buildNarrative("Organization", `<p>${attesterOrgName}</p>`),
         name: attesterOrgName,
       };
     }
@@ -416,7 +416,7 @@ export default function App() {
         id: invoiceId,
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Invoice"] },
-        text: buildNarrative("Invoice", `<p>Total: ₹${Number(invoiceTotal).toFixed(2)}</p>`),
+        // text: buildNarrative("Invoice", `<p>Total: ₹${Number(invoiceTotal).toFixed(2)}</p>`),
         status: "issued", // draft | issued | balanced | cancelled | entered-in-error
         type: { text: "Healthcare invoice" },
         subject: { reference: `urn:uuid:${patientId}` },
@@ -463,7 +463,7 @@ export default function App() {
           id: docId,
           language: "en-IN",
           meta: { profile: ["http://hl7.org/fhir/StructureDefinition/DocumentReference"] },
-          text: buildNarrative("DocumentReference", `<p>${titleDoc}</p>`),
+          // text: buildNarrative("DocumentReference", `<p>${titleDoc}</p>`),
           status: "current",
           type: { text: "Invoice document" },
           subject: { reference: `urn:uuid:${patientId}` },
@@ -498,7 +498,7 @@ export default function App() {
         id: compId,
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Composition"] },
-        text: buildNarrative("Composition", `<p>${title}</p><p>Author: ${practitionerDisplayName}</p>`),
+        // text: buildNarrative("Composition", `<p>${title}</p><p>Author: ${practitionerDisplayName}</p>`),
         status: status,
         type: {
           // Profile fixes type.text = "Invoice Record"
