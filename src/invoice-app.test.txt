@@ -206,47 +206,21 @@ export default function App() {
   }
 
   /* Load patients */
-  /* ---------- Fetch patients: try API first, fallback to local ---------- */
   useEffect(() => {
     (async () => {
       try {
-        // 🔹 First try API endpoint
-        const apiRes = await fetch(window.GlobalPatientAPI, {
-          headers: {
-            "Content-Type": "application/json",
-            ...(window.GlobalAuthToken ? { "Authorization": `Bearer ${window.GlobalAuthToken}` } : {})
-          }
-        });
-        if (!apiRes.ok) throw new Error("API fetch failed");
-        const apiData = await apiRes.json();
-        if (!Array.isArray(apiData) || apiData.length === 0) throw new Error("API returned empty");
-
-        // If API worked, use it
-        setPatients(apiData);
-        setSelectedPatientIdx(0);
-
-        const p = apiData[0];
-        const abhas = normalizeAbhaAddresses(p);
-        setAbhaOptions(abhas);
-        setSelectedAbha(abhas.length ? abhas[0].value : "");
-      } catch (apiErr) {
-        console.warn("⚠️ Patient not found in API. Fetching from local patients.json instead.");
-        console.warn("API fetch failed, falling back to local patients.json", apiErr);
-        try {
-          const localRes = await fetch("/patients.json");
-          const localData = await localRes.json();
-          const arr = Array.isArray(localData) ? localData : [];
-          setPatients(arr);
-          if (arr.length > 0) {
-            setSelectedPatientIdx(0);
-            const p = arr[0];
-            const abhas = normalizeAbhaAddresses(p);
-            setAbhaOptions(abhas);
-            setSelectedAbha(abhas.length ? abhas[0].value : "");
-          }
-        } catch (localErr) {
-          console.error("Failed to fetch local patients.json:", localErr);
+        const res = await fetch("/patients.json");
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : [];
+        setPatients(arr);
+        if (arr.length > 0) {
+          setSelectedPatientIdx(0);
+          const abhas = normalizeAbhaAddresses(arr[0]);
+          setAbhaOptions(abhas);
+          setSelectedAbha(abhas.length ? abhas[0].value : "");
         }
+      } catch (e) {
+        console.error("Failed to load patients.json", e);
       }
     })();
   }, []);

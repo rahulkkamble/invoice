@@ -21,6 +21,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "proxy": "https://uat.discharge.org.in",
   "eslintConfig": {
     "extends": [
       "react-app",
