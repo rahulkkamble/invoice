@@ -516,10 +516,10 @@ export default function App() {
             title: "Invoice section",
             code: { text: "Invoice Record" },
             entry: entries.length ? entries : undefined,
-            text: entries.length ? undefined : {
-              status: "generated",
-              div: `<div xmlns="http://www.w3.org/1999/xhtml" lang="en-IN" xml:lang="en-IN"><p>No invoice entries</p></div>`,
-            },
+            // text: entries.length ? undefined : {
+            //   status: "generated",
+            //   div: `<div xmlns="http://www.w3.org/1999/xhtml" lang="en-IN" xml:lang="en-IN"><p>No invoice entries</p></div>`,
+            // },
           },
         ],
       };
@@ -563,7 +563,7 @@ export default function App() {
     binaries.forEach(b => bundle.entry.push({ fullUrl: `urn:uuid:${b.id}`, resource: b }));
 
     // Submit
-    const originalPatientId = String(selectedPatient?.id || "");
+    const originalPatientId = Number(selectedPatient?.user_id);
     axios.post("https://uat.discharge.org.in/api/v5/fhir-bundle", { bundle, patient: originalPatientId })
       .then(response => {
         console.log("FHIR Bundle Submitted:", response.data);
