@@ -132,7 +132,7 @@ function normalizeAbhaAddresses(patientObj) {
 }
 
 /* Practitioner globals (from window) */
-const gp = typeof window !== "undefined" ? window.GlobalPractitioner : null;
+const gp = typeof window !== "undefined" ? window.GlobalPractioner : null;
 const practitionerRefId = safeUuid(gp?.id);
 const practitionerDisplayName =
   (Array.isArray(gp?.name) && gp.name?.[0]?.text) ||
