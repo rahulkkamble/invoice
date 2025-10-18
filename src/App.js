@@ -211,7 +211,7 @@ export default function App() {
     (async () => {
       try {
         // 🔹 First try API endpoint
-        const apiRes = await fetch(window.GlobalPatientAPI, {
+        const apiRes = await fetch("/api/v5/patients", {
           headers: {
             "Content-Type": "application/json",
             ...(window.GlobalAuthToken ? { "Authorization": `Bearer ${window.GlobalAuthToken}` } : {})
