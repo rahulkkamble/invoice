@@ -132,7 +132,7 @@ function normalizeAbhaAddresses(patientObj) {
 }
 
 /* Practitioner globals (from window) */
-const gp = typeof window !== "undefined" ? window.GlobalPractitioner : null;
+const gp = typeof window !== "undefined" ? window.GlobalPractioner : null;
 const practitionerRefId = safeUuid(gp?.id);
 const practitionerDisplayName =
   (Array.isArray(gp?.name) && gp.name?.[0]?.text) ||
@@ -211,7 +211,7 @@ export default function App() {
     (async () => {
       try {
         // 🔹 First try API endpoint
-        const apiRes = await fetch(window.GlobalPatientAPI, {
+        const apiRes = await fetch("/api/v5/patients", {
           headers: {
             "Content-Type": "application/json",
             ...(window.GlobalAuthToken ? { "Authorization": `Bearer ${window.GlobalAuthToken}` } : {})
@@ -308,7 +308,16 @@ export default function App() {
       const telecom = [];
       if (p?.mobile) telecom.push({ system: "phone", value: p.mobile });
       if (p?.email) telecom.push({ system: "email", value: p.email });
-      if (selectedAbha) telecom.push({ system: "url", value: `abha://${selectedAbha}` });
+      if (selectedAbha) {
+        identifiers.push({
+          system: "https://healthid.abdm.gov.in/address",
+          value: String(selectedAbha),
+          type: {
+            coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "PN", display: "Person number" }],
+            text: "ABHA Address"
+          }
+        });
+      }
 
       return {
         resourceType: "Patient",
@@ -488,9 +497,15 @@ export default function App() {
 
       const attesterArr = [];
       if (attesterPartyType === "Practitioner") {
-        attesterArr.push({ mode: attesterMode, party: { reference: `urn:uuid:${practitionerId}` } });
+        attesterArr.push({
+          mode: attesterMode,
+          party: { reference: `urn:uuid:${practitionerRes.id}` }
+        });
       } else if (attesterPartyType === "Organization" && attesterOrgId) {
-        attesterArr.push({ mode: attesterMode, party: { reference: `urn:uuid:${attesterOrgId}` } });
+        attesterArr.push({
+          mode: attesterMode,
+          party: { reference: `urn:uuid:${attesterOrgId}` }
+        });
       }
 
       const comp = {
@@ -498,31 +513,26 @@ export default function App() {
         id: compId,
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Composition"] },
-        // text: buildNarrative("Composition", `<p>${title}</p><p>Author: ${practitionerDisplayName}</p>`),
-        status: status,
-        type: {
-          // Profile fixes type.text = "Invoice Record"
-          text: "Invoice Record"
-        },
+        status,
+        type: { text: "Invoice Record" },
         subject: { reference: `urn:uuid:${patientId}` },
         ...(encounterId ? { encounter: { reference: `urn:uuid:${encounterId}` } } : {}),
         date: authoredOn,
-        author: [{ reference: `urn:uuid:${practitionerId}`, display: practitionerDisplayName }],
-        title: title,
-        attester: (attesterArr.length ? attesterArr : [{ mode: "official", party: { reference: `urn:uuid:${practitionerId}` } }]),
+        author: [{ reference: `urn:uuid:${practitionerRes.id}`, display: practitionerDisplayName }],
+        title,
+        attester: attesterArr.length
+          ? attesterArr
+          : [{ mode: "official", party: { reference: `urn:uuid:${practitionerRes.id}` } }],
         ...(custodianId ? { custodian: { reference: `urn:uuid:${custodianId}` } } : {}),
         section: [
           {
             title: "Invoice section",
             code: { text: "Invoice Record" },
             entry: entries.length ? entries : undefined,
-            // text: entries.length ? undefined : {
-            //   status: "generated",
-            //   div: `<div xmlns="http://www.w3.org/1999/xhtml" lang="en-IN" xml:lang="en-IN"><p>No invoice entries</p></div>`,
-            // },
           },
         ],
       };
+
       return comp;
     }
 
@@ -589,7 +599,7 @@ export default function App() {
             <div className="col-md-8">
               <label className="form-label">Select Patient</label>
               <select className="form-select" value={selectedPatientIdx} onChange={e => setSelectedPatientIdx(Number(e.target.value))}>
-                {patients.map((p, i) => <option key={p.id || i} value={i}>{p.name} {p.abha_ref ? `(${p.abha_ref})` : ""}</option>)}
+                {patients.map((p, i) => <option key={p.user_id || i} value={i}>{p.name} {p.abha_ref ? `(${p.abha_ref})` : ""}</option>)}
               </select>
             </div>
             <div className="col-md-4">

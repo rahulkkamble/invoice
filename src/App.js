@@ -313,7 +313,8 @@ export default function App() {
           system: "https://healthid.abdm.gov.in/address",
           value: String(selectedAbha),
           type: {
-            coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "PN", display: "Person number" }],
+            // coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "PN", display: "Person number" }],
+            coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "SB", display: "Social Beneficiary Identifier" }],
             text: "ABHA Address"
           }
         });
@@ -514,7 +515,10 @@ export default function App() {
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Composition"] },
         status,
-        type: { text: "Invoice Record" },
+        type: {
+          coding: [{ system: "http://loinc.org", code: "34746-8", display: "Hospital admission invoice" }],
+          text: "Invoice Record"
+        },
         subject: { reference: `urn:uuid:${patientId}` },
         ...(encounterId ? { encounter: { reference: `urn:uuid:${encounterId}` } } : {}),
         date: authoredOn,
