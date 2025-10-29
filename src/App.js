@@ -515,10 +515,7 @@ export default function App() {
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Composition"] },
         status,
-        type: {
-          coding: [{ system: "http://loinc.org", code: "34746-8", display: "Hospital admission invoice" }],
-          text: "Invoice Record"
-        },
+        type: { text: "Invoice Record" },
         subject: { reference: `urn:uuid:${patientId}` },
         ...(encounterId ? { encounter: { reference: `urn:uuid:${encounterId}` } } : {}),
         date: authoredOn,
