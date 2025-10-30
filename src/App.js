@@ -132,16 +132,37 @@ function normalizeAbhaAddresses(patientObj) {
 }
 
 /* Practitioner globals (from window) */
-const gp = typeof window !== "undefined" ? window.GlobalPractioner : null;
-const practitionerRefId = safeUuid(gp?.id);
-const practitionerDisplayName =
-  (Array.isArray(gp?.name) && gp.name?.[0]?.text) ||
-  (typeof gp?.name === "string" ? gp.name : "") ||
-  "Dr. ABC";
-const practitionerLicense =
-  (Array.isArray(gp?.identifier) && gp.identifier?.[0]?.value) ||
-  gp?.license ||
-  "LIC-TEMP-0001";
+// const gp = typeof window !== "undefined" ? window.GlobalPractioner : null;
+// const practitionerRefId = safeUuid(gp?.id);
+// const practitionerDisplayName =
+//   (Array.isArray(gp?.name) && gp.name?.[0]?.text) ||
+//   (typeof gp?.name === "string" ? gp.name : "") ||
+//   "Dr. ABC";
+// const practitionerLicense =
+//   (Array.isArray(gp?.identifier) && gp.identifier?.[0]?.value) ||
+//   gp?.license ||
+//   "LIC-TEMP-0001";
+
+const { practitionerRefId, practitionerDisplayName, practitionerLicense } = resolveGlobalPractitioner();
+
+function resolveGlobalPractitioner() {
+  const gp =
+    (typeof window !== "undefined" &&
+      (window.GlobalPractioner || window.GlobalPractionerFHIR)) ||
+    null;
+
+  const practitionerRefId = safeUuid(gp?.id);
+  const practitionerDisplayName =
+    (Array.isArray(gp?.name) && gp?.name[0]?.text) ||
+    (typeof gp?.name === "string" ? gp?.name : "") ||
+    "Dr. ABC";
+  const practitionerLicense =
+    (Array.isArray(gp?.identifier) && gp?.identifier[0]?.value) ||
+    (typeof gp?.license === "string" ? gp?.license : "") ||
+    "LIC-TEMP-0001";
+
+  return { practitionerRefId, practitionerDisplayName, practitionerLicense };
+}
 
 /* ------------------------------- APP -------------------------------------- */
 export default function App() {

@@ -313,7 +313,8 @@ export default function App() {
           system: "https://healthid.abdm.gov.in/address",
           value: String(selectedAbha),
           type: {
-            coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "PN", display: "Person number" }],
+            // coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "PN", display: "Person number" }],
+            coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "SB", display: "Social Beneficiary Identifier" }],
             text: "ABHA Address"
           }
         });
