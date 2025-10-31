@@ -546,7 +546,10 @@ export default function App() {
           meta: { profile: ["http://hl7.org/fhir/StructureDefinition/DocumentReference"] },
           text: buildNarrative("DocumentReference", `<p>${titleDoc}</p>`),
           status: "current",
-          type: { text: "Invoice document" },
+          type: {
+            coding: [{ system: "http://snomed.info/sct", code: "371525003", display: "Clinical procedure report" }],
+            text: "Invoice document"
+          },
           subject: { reference: `urn:uuid:${patientId}` },
           date: authoredOn,
           content: [{ attachment: { contentType, title: titleDoc, url: `urn:uuid:${binId}` } }],
@@ -586,7 +589,13 @@ export default function App() {
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Composition"] },
         status,
-        type: { text: "Invoice Record" }, // keep text; NDHM doesn’t mandate coding for this form
+        type: {
+          coding: [
+            { system: "http://snomed.info/sct", code: "373942005", display: "Discharge summary" },
+            { system: "http://loinc.org", code: "18842-5", display: "Discharge summary" }
+          ],
+          text: "Invoice Record"
+        },
         subject: { reference: `urn:uuid:${patientId}`, display: selectedPatient?.name || "" },
         ...(encounterId ? { encounter: { reference: `urn:uuid:${encounterId}` } } : {}),
         date: authoredOn,
@@ -600,7 +609,15 @@ export default function App() {
         section: [
           {
             title: "Invoice section",
-            code: { text: "Invoice Record" },
+            code: {
+              coding: [
+                { system: "http://snomed.info/sct", code: "373942005", display: "Discharge summary" },
+                { system: "http://loinc.org", code: "18842-5", display: "Discharge summary" }
+              ],
+              text: "Invoice Record"
+            },
+
+
             entry: entries.length ? entries : undefined,
             ...(entries.length ? {} : { text: buildNarrative("Invoice section", "<p>No invoice entries</p>") })
           },
