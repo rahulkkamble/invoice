@@ -143,7 +143,7 @@ function normalizeAbhaAddresses(patientObj) {
 //   gp?.license ||
 //   "LIC-TEMP-0001";
 
-const { practitionerRefId, practitionerDisplayName, practitionerLicense } = resolveGlobalPractitioner();
+// const { practitionerRefId, practitionerDisplayName, practitionerLicense } = resolveGlobalPractitioner();
 
 function resolveGlobalPractitioner() {
   const gp =
@@ -151,21 +151,31 @@ function resolveGlobalPractitioner() {
       (window.GlobalPractioner || window.GlobalPractionerFHIR)) ||
     null;
 
-  const practitionerRefId = safeUuid(gp?.id);
-  const practitionerDisplayName =
-    (Array.isArray(gp?.name) && gp?.name[0]?.text) ||
-    (typeof gp?.name === "string" ? gp?.name : "") ||
-    "Dr. ABC";
-  const practitionerLicense =
-    (Array.isArray(gp?.identifier) && gp?.identifier[0]?.value) ||
-    (typeof gp?.license === "string" ? gp?.license : "") ||
-    "LIC-TEMP-0001";
+  const fallback = {
+    practitionerRefId: "pract-001",
+    practitionerDisplayName: "Dr. ABC",
+    practitionerLicense: "LIC-TEMP-0001"
+  };
 
-  return { practitionerRefId, practitionerDisplayName, practitionerLicense };
+  if (!gp) return fallback;
+
+  return {
+    practitionerRefId: safeUuid(gp?.id) || fallback.practitionerRefId,
+    practitionerDisplayName:
+      (Array.isArray(gp?.name) && gp?.name[0]?.text) ||
+      (typeof gp?.name === "string" ? gp?.name : "") ||
+      fallback.practitionerDisplayName,
+    practitionerLicense:
+      (Array.isArray(gp?.identifier) && gp?.identifier[0]?.value) ||
+      (typeof gp?.license === "string" ? gp?.license : "") ||
+      fallback.practitionerLicense
+  };
 }
 
 /* ------------------------------- APP -------------------------------------- */
 export default function App() {
+  const [practitioner, setPractitioner] = useState(resolveGlobalPractitioner());
+
   /* Patient selection */
   const [patients, setPatients] = useState([]);
   const [selectedPatientIdx, setSelectedPatientIdx] = useState(-1);
@@ -225,6 +235,29 @@ export default function App() {
     setFilePreviewNames(prev => prev.filter((_, idx) => idx !== i));
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
+  useEffect(() => {
+    // re-resolve once after mount
+    const resolved = resolveGlobalPractitioner();
+    setPractitioner(resolved);
+
+    // optional: poll for late injection
+    const interval = setInterval(() => {
+      const r = resolveGlobalPractitioner();
+      setPractitioner(prev => {
+        if (
+          prev.practitionerRefId !== r.practitionerRefId ||
+          prev.practitionerDisplayName !== r.practitionerDisplayName ||
+          prev.practitionerLicense !== r.practitionerLicense
+        ) {
+          return r;
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
 
   /* Load patients */
   /* ---------- Fetch patients: try API first, fallback to local ---------- */
@@ -309,7 +342,7 @@ export default function App() {
     // UUID ids for urn:uuid references
     const compId = uuidv4();
     const patientId = uuidv4(); // bundle-local Patient.id
-    const practitionerId = practitionerRefId || uuidv4();
+    const practitionerId = practitioner.practitionerRefId || uuidv4();
     const encounterId = encounterText ? uuidv4() : null;
     const custodianId = custodianName ? uuidv4() : null;
     const attesterOrgId = attesterPartyType === "Organization" && attesterOrgName ? uuidv4() : null;
@@ -323,8 +356,23 @@ export default function App() {
       const p = selectedPatient || {};
       const identifiers = [];
       const mrnLocal = p?.user_ref_id || p?.mrn || p?.abha_ref || p?.id;
-      if (mrnLocal) identifiers.push({ system: "https://healthid.ndhm.gov.in", value: String(mrnLocal) });
-      if (p?.abha_ref) identifiers.push({ system: "https://abdm.gov.in/abha", value: p.abha_ref });
+      if (mrnLocal) identifiers.push({
+        system: "https://healthid.ndhm.gov.in",
+        value: String(mrnLocal),
+        type: {
+          coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "MR", display: "Medical record number" }],
+          text: "MRN"
+        }
+      });
+      if (p?.abha_ref) identifiers.push({
+        system: "https://abdm.gov.in/abha",
+        value: p.abha_ref,
+        type: {
+          coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "PI", display: "Patient internal identifier" }],
+          text: "ABHA Number"
+        }
+
+      });
 
       const telecom = [];
       if (p?.mobile) telecom.push({ system: "phone", value: p.mobile });
@@ -335,7 +383,8 @@ export default function App() {
           value: String(selectedAbha),
           type: {
             // coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "PN", display: "Person number" }],
-            coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "SB", display: "Social Beneficiary Identifier" }],
+            // coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "SB", display: "Social Beneficiary Identifier" }],
+            coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "PN", display: "Person number" }],
             text: "ABHA Address"
           }
         });
@@ -345,7 +394,8 @@ export default function App() {
         resourceType: "Patient",
         id: idForBundle,
         language: "en-IN",
-        meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Patient"] },
+        meta: { profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/Patient"] },
+        text: buildNarrative("Patient", `<p>${p.name || ""}</p><p>${(p.gender || "").toLowerCase()} ${ddmmyyyyToISO(p.dob) || ""}</p>`),
         // text: buildNarrative("Patient", `<p>${p.name || ""}</p><p>${p.gender || ""} ${p.dob || ""}</p>`),
         identifier: identifiers.length ? identifiers : undefined,
         name: p.name ? [{ text: p.name }] : undefined,
@@ -363,7 +413,7 @@ export default function App() {
         id: practRefId,
         language: "en-IN",
         meta: { profile: ["https://nrces.in/ndhm/fhir/r4/StructureDefinition/Practitioner"] },
-        // text: buildNarrative("Practitioner", `<p>${practName}</p>`),
+        text: buildNarrative("Practitioner", `<p>${practName}</p><p>License: ${practLicense}</p>`),
         identifier: [{
           type: { coding: [{ system: "http://terminology.hl7.org/CodeSystem/v2-0203", code: "MD", display: "Medical License number" }] },
           system: "https://doctor.ndhm.gov.in",
@@ -382,7 +432,7 @@ export default function App() {
         id: encounterId,
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Encounter"] },
-        // text: buildNarrative("Encounter", `<p>${encounterText}</p>`),
+        text: buildNarrative("Encounter", `<p>${encounterText || "Ambulatory encounter"}</p>`),
         status: "finished",
         class: { system: "http://terminology.hl7.org/CodeSystem/v3-ActCode", code: "AMB", display: "ambulatory" },
         subject: { reference: `urn:uuid:${patientId}` },
@@ -447,12 +497,12 @@ export default function App() {
         id: invoiceId,
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Invoice"] },
-        // text: buildNarrative("Invoice", `<p>Total: ₹${Number(invoiceTotal).toFixed(2)}</p>`),
+        text: buildNarrative("Invoice", `<p>Total: ₹${Number(invoiceTotal).toFixed(2)}</p>`),
         status: "issued", // draft | issued | balanced | cancelled | entered-in-error
         type: { text: "Healthcare invoice" },
         subject: { reference: `urn:uuid:${patientId}` },
         date: authoredOn,
-        participant: [{ role: { text: "issuer" }, actor: { reference: `urn:uuid:${practitionerId}`, display: practitionerDisplayName } }],
+        participant: [{ role: { text: "issuer" }, actor: { reference: `urn:uuid:${practitionerId}`, display: practitioner.practitionerDisplayName } }],
         lineItem: lineItems.length ? lineItems : undefined,
         totalNet: { value: Number(invoiceTotal.toFixed(2)), currency: "INR" },
         totalGross: { value: Number(invoiceTotal.toFixed(2)), currency: "INR" },
@@ -494,7 +544,7 @@ export default function App() {
           id: docId,
           language: "en-IN",
           meta: { profile: ["http://hl7.org/fhir/StructureDefinition/DocumentReference"] },
-          // text: buildNarrative("DocumentReference", `<p>${titleDoc}</p>`),
+          text: buildNarrative("DocumentReference", `<p>${titleDoc}</p>`),
           status: "current",
           type: { text: "Invoice document" },
           subject: { reference: `urn:uuid:${patientId}` },
@@ -536,12 +586,13 @@ export default function App() {
         language: "en-IN",
         meta: { profile: ["http://hl7.org/fhir/StructureDefinition/Composition"] },
         status,
-        type: { text: "Invoice Record" },
-        subject: { reference: `urn:uuid:${patientId}` },
+        type: { text: "Invoice Record" }, // keep text; NDHM doesn’t mandate coding for this form
+        subject: { reference: `urn:uuid:${patientId}`, display: selectedPatient?.name || "" },
         ...(encounterId ? { encounter: { reference: `urn:uuid:${encounterId}` } } : {}),
         date: authoredOn,
-        author: [{ reference: `urn:uuid:${practitionerRes.id}`, display: practitionerDisplayName }],
+        author: [{ reference: `urn:uuid:${practitionerRes.id}`, display: practitioner.practitionerDisplayName }],
         title,
+        text: buildNarrative("Invoice Record", `<p>Subject: ${selectedPatient?.name || ""}</p><p>Author: ${practitioner.practitionerDisplayName}</p>`),
         attester: attesterArr.length
           ? attesterArr
           : [{ mode: "official", party: { reference: `urn:uuid:${practitionerRes.id}` } }],
@@ -551,6 +602,7 @@ export default function App() {
             title: "Invoice section",
             code: { text: "Invoice Record" },
             entry: entries.length ? entries : undefined,
+            ...(entries.length ? {} : { text: buildNarrative("Invoice section", "<p>No invoice entries</p>") })
           },
         ],
       };
@@ -560,7 +612,7 @@ export default function App() {
 
     // Build resources
     const patientRes = buildPatientResource(patientId);
-    const practitionerRes = buildPractitionerResource(practitionerId, practitionerDisplayName, practitionerLicense);
+    const practitionerRes = buildPractitionerResource(practitioner.practitionerRefId, practitioner.practitionerDisplayName, practitioner.practitionerLicense);
     const encounterRes = buildEncounterResource();
     const custodianRes = buildCustodianOrg();
     const attesterOrgRes = buildAttesterOrg();
@@ -666,11 +718,11 @@ export default function App() {
           <div className="row g-3">
             <div className="col-md-6">
               <label className="form-label">Practitioner</label>
-              <input className="form-control" readOnly value={practitionerDisplayName} />
+              <input className="form-control" readOnly value={practitioner.practitionerDisplayName} />
             </div>
             <div className="col-md-6">
               <label className="form-label">License</label>
-              <input className="form-control" readOnly value={practitionerLicense} />
+              <input className="form-control" readOnly value={practitioner.practitionerLicense} />
             </div>
           </div>
         </div>
@@ -743,7 +795,7 @@ export default function App() {
             {attesterPartyType === "Practitioner" && (
               <div className="col-md-6">
                 <label className="form-label">Attester Practitioner (read-only)</label>
-                <input className="form-control" readOnly value={practitionerDisplayName} />
+                <input className="form-control" readOnly value={practitioner.practitionerDisplayName} />
               </div>
             )}
           </div>

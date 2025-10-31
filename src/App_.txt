@@ -132,19 +132,50 @@ function normalizeAbhaAddresses(patientObj) {
 }
 
 /* Practitioner globals (from window) */
-const gp = typeof window !== "undefined" ? window.GlobalPractioner : null;
-const practitionerRefId = safeUuid(gp?.id);
-const practitionerDisplayName =
-  (Array.isArray(gp?.name) && gp.name?.[0]?.text) ||
-  (typeof gp?.name === "string" ? gp.name : "") ||
-  "Dr. ABC";
-const practitionerLicense =
-  (Array.isArray(gp?.identifier) && gp.identifier?.[0]?.value) ||
-  gp?.license ||
-  "LIC-TEMP-0001";
+// const gp = typeof window !== "undefined" ? window.GlobalPractioner : null;
+// const practitionerRefId = safeUuid(gp?.id);
+// const practitionerDisplayName =
+//   (Array.isArray(gp?.name) && gp.name?.[0]?.text) ||
+//   (typeof gp?.name === "string" ? gp.name : "") ||
+//   "Dr. ABC";
+// const practitionerLicense =
+//   (Array.isArray(gp?.identifier) && gp.identifier?.[0]?.value) ||
+//   gp?.license ||
+//   "LIC-TEMP-0001";
+
+// const { practitionerRefId, practitionerDisplayName, practitionerLicense } = resolveGlobalPractitioner();
+
+function resolveGlobalPractitioner() {
+  const gp =
+    (typeof window !== "undefined" &&
+      (window.GlobalPractioner || window.GlobalPractionerFHIR)) ||
+    null;
+
+  const fallback = {
+    practitionerRefId: "pract-001",
+    practitionerDisplayName: "Dr. ABC",
+    practitionerLicense: "LIC-TEMP-0001"
+  };
+
+  if (!gp) return fallback;
+
+  return {
+    practitionerRefId: safeUuid(gp?.id) || fallback.practitionerRefId,
+    practitionerDisplayName:
+      (Array.isArray(gp?.name) && gp?.name[0]?.text) ||
+      (typeof gp?.name === "string" ? gp?.name : "") ||
+      fallback.practitionerDisplayName,
+    practitionerLicense:
+      (Array.isArray(gp?.identifier) && gp?.identifier[0]?.value) ||
+      (typeof gp?.license === "string" ? gp?.license : "") ||
+      fallback.practitionerLicense
+  };
+}
 
 /* ------------------------------- APP -------------------------------------- */
 export default function App() {
+  const [practitioner, setPractitioner] = useState(resolveGlobalPractitioner());
+
   /* Patient selection */
   const [patients, setPatients] = useState([]);
   const [selectedPatientIdx, setSelectedPatientIdx] = useState(-1);
@@ -204,6 +235,29 @@ export default function App() {
     setFilePreviewNames(prev => prev.filter((_, idx) => idx !== i));
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
+  useEffect(() => {
+    // re-resolve once after mount
+    const resolved = resolveGlobalPractitioner();
+    setPractitioner(resolved);
+
+    // optional: poll for late injection
+    const interval = setInterval(() => {
+      const r = resolveGlobalPractitioner();
+      setPractitioner(prev => {
+        if (
+          prev.practitionerRefId !== r.practitionerRefId ||
+          prev.practitionerDisplayName !== r.practitionerDisplayName ||
+          prev.practitionerLicense !== r.practitionerLicense
+        ) {
+          return r;
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
 
   /* Load patients */
   /* ---------- Fetch patients: try API first, fallback to local ---------- */
@@ -288,7 +342,7 @@ export default function App() {
     // UUID ids for urn:uuid references
     const compId = uuidv4();
     const patientId = uuidv4(); // bundle-local Patient.id
-    const practitionerId = practitionerRefId || uuidv4();
+    const practitionerId = practitioner.practitionerRefId || uuidv4();
     const encounterId = encounterText ? uuidv4() : null;
     const custodianId = custodianName ? uuidv4() : null;
     const attesterOrgId = attesterPartyType === "Organization" && attesterOrgName ? uuidv4() : null;
@@ -431,7 +485,7 @@ export default function App() {
         type: { text: "Healthcare invoice" },
         subject: { reference: `urn:uuid:${patientId}` },
         date: authoredOn,
-        participant: [{ role: { text: "issuer" }, actor: { reference: `urn:uuid:${practitionerId}`, display: practitionerDisplayName } }],
+        participant: [{ role: { text: "issuer" }, actor: { reference: `urn:uuid:${practitionerId}`, display: practitioner.practitionerDisplayName } }],
         lineItem: lineItems.length ? lineItems : undefined,
         totalNet: { value: Number(invoiceTotal.toFixed(2)), currency: "INR" },
         totalGross: { value: Number(invoiceTotal.toFixed(2)), currency: "INR" },
@@ -519,7 +573,7 @@ export default function App() {
         subject: { reference: `urn:uuid:${patientId}` },
         ...(encounterId ? { encounter: { reference: `urn:uuid:${encounterId}` } } : {}),
         date: authoredOn,
-        author: [{ reference: `urn:uuid:${practitionerRes.id}`, display: practitionerDisplayName }],
+        author: [{ reference: `urn:uuid:${practitionerRes.id}`, display: practitioner.practitionerDisplayName }],
         title,
         attester: attesterArr.length
           ? attesterArr
@@ -539,7 +593,7 @@ export default function App() {
 
     // Build resources
     const patientRes = buildPatientResource(patientId);
-    const practitionerRes = buildPractitionerResource(practitionerId, practitionerDisplayName, practitionerLicense);
+    const practitionerRes = buildPractitionerResource(practitioner.practitionerRefId, practitioner.practitionerDisplayName, practitioner.practitionerLicense);
     const encounterRes = buildEncounterResource();
     const custodianRes = buildCustodianOrg();
     const attesterOrgRes = buildAttesterOrg();
@@ -645,11 +699,11 @@ export default function App() {
           <div className="row g-3">
             <div className="col-md-6">
               <label className="form-label">Practitioner</label>
-              <input className="form-control" readOnly value={practitionerDisplayName} />
+              <input className="form-control" readOnly value={practitioner.practitionerDisplayName} />
             </div>
             <div className="col-md-6">
               <label className="form-label">License</label>
-              <input className="form-control" readOnly value={practitionerLicense} />
+              <input className="form-control" readOnly value={practitioner.practitionerLicense} />
             </div>
           </div>
         </div>
@@ -722,7 +776,7 @@ export default function App() {
             {attesterPartyType === "Practitioner" && (
               <div className="col-md-6">
                 <label className="form-label">Attester Practitioner (read-only)</label>
-                <input className="form-control" readOnly value={practitionerDisplayName} />
+                <input className="form-control" readOnly value={practitioner.practitionerDisplayName} />
               </div>
             )}
           </div>
